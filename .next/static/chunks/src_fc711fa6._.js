@@ -366,6 +366,11 @@ var _s = __turbopack_context__.k.signature();
 function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
     _s();
     const [searchTerm, setSearchTerm] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [isUpdatingAll, setIsUpdatingAll] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [updateProgress, setUpdateProgress] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
+        current: 0,
+        total: 0
+    });
     if (remessas.length === 0) {
         return null;
     }
@@ -388,6 +393,90 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
             return date.toLocaleDateString('pt-BR');
         } catch  {
             return dateString;
+        }
+    };
+    const atualizarTodos = async ()=>{
+        if (isUpdatingAll) return;
+        // Filtrar remessas que têm número operacional
+        const remessasComNumero = remessas.map((remessa, index)=>({
+                remessa,
+                index
+            })).filter(({ remessa })=>remessa.numeroOperacional && remessa.numeroOperacional.trim() !== '');
+        if (remessasComNumero.length === 0) {
+            alert('Nenhuma remessa com número operacional encontrada para atualizar.');
+            return;
+        }
+        const confirmacao = confirm(`Deseja atualizar o status de ${remessasComNumero.length} remessa${remessasComNumero.length > 1 ? 's' : ''}?\n\n` + `Esta operação pode levar alguns minutos devido aos limites da API da Jadlog.`);
+        if (!confirmacao) return;
+        setIsUpdatingAll(true);
+        setUpdateProgress({
+            current: 0,
+            total: remessasComNumero.length
+        });
+        try {
+            // Extrair apenas os números operacionais
+            const numeroOperacionais = remessasComNumero.map(({ remessa })=>remessa.numeroOperacional);
+            // Fazer chamada para a API de lote
+            const response = await fetch('/api/tracking/batch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    numeroOperacionais
+                })
+            });
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.results && Array.isArray(data.results)) {
+                // Atualizar cada remessa com o resultado
+                data.results.forEach((result)=>{
+                    const remessaItem = remessasComNumero.find(({ remessa })=>remessa.numeroOperacional === result.numeroOperacional);
+                    if (remessaItem) {
+                        const { remessa, index } = remessaItem;
+                        if (result.success && result.tracking) {
+                            // Sucesso - atualizar com dados do tracking
+                            onUpdateRemessa(index, {
+                                ...remessa,
+                                tracking: {
+                                    status: result.tracking.status,
+                                    ultimaAtualizacao: result.tracking.ultimaAtualizacao,
+                                    previsaoEntrega: result.tracking.previsaoEntrega,
+                                    eventos: result.tracking.eventos || []
+                                },
+                                isLoadingTracking: false
+                            });
+                        } else {
+                            // Erro - marcar como erro
+                            onUpdateRemessa(index, {
+                                ...remessa,
+                                tracking: {
+                                    status: result.error || 'Erro na consulta',
+                                    ultimaAtualizacao: 'N/A',
+                                    eventos: []
+                                },
+                                isLoadingTracking: false
+                            });
+                        }
+                    }
+                });
+                // Mostrar resumo
+                const { summary } = data;
+                alert(`Atualização concluída!\n\n` + `Total processado: ${summary.processed}\n` + `Sucessos: ${summary.successful}\n` + `Falhas: ${summary.failed}\n` + `Lotes processados: ${summary.batches}`);
+            } else {
+                throw new Error('Resposta inválida da API');
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar todos:', error);
+            alert('Erro ao atualizar remessas. Tente novamente mais tarde.');
+        } finally{
+            setIsUpdatingAll(false);
+            setUpdateProgress({
+                current: 0,
+                total: 0
+            });
         }
     };
     const consultarTracking = async (remessa, index)=>{
@@ -461,14 +550,14 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                         className: "animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 mr-1"
                     }, void 0, false, {
                         fileName: "[project]/src/components/RemessasList.tsx",
-                        lineNumber: 114,
+                        lineNumber: 217,
                         columnNumber: 11
                     }, this),
                     "Consultando..."
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 113,
+                lineNumber: 216,
                 columnNumber: 9
             }, this);
         }
@@ -478,7 +567,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                 children: "Clique para consultar"
             }, void 0, false, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 122,
+                lineNumber: 225,
                 columnNumber: 9
             }, this);
         }
@@ -489,7 +578,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                 children: remessa.tracking.status
             }, void 0, false, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 132,
+                lineNumber: 235,
                 columnNumber: 9
             }, this);
         } else if (status.includes('transito') || status.includes('trânsito')) {
@@ -498,7 +587,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                 children: remessa.tracking.status
             }, void 0, false, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 138,
+                lineNumber: 241,
                 columnNumber: 9
             }, this);
         } else if (status.includes('problema') || status.includes('erro')) {
@@ -507,7 +596,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                 children: remessa.tracking.status
             }, void 0, false, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 144,
+                lineNumber: 247,
                 columnNumber: 9
             }, this);
         } else {
@@ -516,7 +605,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                 children: remessa.tracking.status
             }, void 0, false, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 150,
+                lineNumber: 253,
                 columnNumber: 9
             }, this);
         }
@@ -573,7 +662,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                 children: "Detalhes das Encomendas"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                lineNumber: 221,
+                                lineNumber: 324,
                                 columnNumber: 11
                             }, this),
                             proximasAExpirar > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -591,13 +680,13 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                lineNumber: 227,
+                                lineNumber: 330,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RemessasList.tsx",
-                        lineNumber: 220,
+                        lineNumber: 323,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -620,17 +709,17 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                                 d: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                                lineNumber: 237,
+                                                lineNumber: 340,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 236,
+                                            lineNumber: 339,
                                             columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RemessasList.tsx",
-                                        lineNumber: 235,
+                                        lineNumber: 338,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -641,56 +730,114 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                         className: "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RemessasList.tsx",
-                                        lineNumber: 240,
+                                        lineNumber: 343,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                lineNumber: 234,
+                                lineNumber: 337,
                                 columnNumber: 11
                             }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: onClear,
-                                className: "ml-4 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center",
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex space-x-3",
                                 children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
-                                        className: "w-4 h-4 mr-2",
-                                        fill: "none",
-                                        stroke: "currentColor",
-                                        viewBox: "0 0 24 24",
-                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
-                                            strokeLinecap: "round",
-                                            strokeLinejoin: "round",
-                                            strokeWidth: 2,
-                                            d: "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 254,
-                                            columnNumber: 15
-                                        }, this)
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        onClick: atualizarTodos,
+                                        disabled: isUpdatingAll || remessas.length === 0,
+                                        className: "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center disabled:opacity-50 disabled:cursor-not-allowed",
+                                        children: isUpdatingAll ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/RemessasList.tsx",
+                                                    lineNumber: 360,
+                                                    columnNumber: 19
+                                                }, this),
+                                                "Atualizando... (",
+                                                updateProgress.current,
+                                                "/",
+                                                updateProgress.total,
+                                                ")"
+                                            ]
+                                        }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
+                                                    className: "w-4 h-4 mr-2",
+                                                    fill: "none",
+                                                    stroke: "currentColor",
+                                                    viewBox: "0 0 24 24",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
+                                                        strokeLinecap: "round",
+                                                        strokeLinejoin: "round",
+                                                        strokeWidth: 2,
+                                                        d: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/RemessasList.tsx",
+                                                        lineNumber: 366,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/RemessasList.tsx",
+                                                    lineNumber: 365,
+                                                    columnNumber: 19
+                                                }, this),
+                                                "Atualizar Todos"
+                                            ]
+                                        }, void 0, true)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RemessasList.tsx",
-                                        lineNumber: 253,
+                                        lineNumber: 353,
                                         columnNumber: 13
                                     }, this),
-                                    "Limpar Tudo"
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        onClick: onClear,
+                                        className: "px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
+                                                className: "w-4 h-4 mr-2",
+                                                fill: "none",
+                                                stroke: "currentColor",
+                                                viewBox: "0 0 24 24",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
+                                                    strokeLinecap: "round",
+                                                    strokeLinejoin: "round",
+                                                    strokeWidth: 2,
+                                                    d: "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/RemessasList.tsx",
+                                                    lineNumber: 378,
+                                                    columnNumber: 17
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/RemessasList.tsx",
+                                                lineNumber: 377,
+                                                columnNumber: 15
+                                            }, this),
+                                            "Limpar Tudo"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/RemessasList.tsx",
+                                        lineNumber: 373,
+                                        columnNumber: 13
+                                    }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                lineNumber: 249,
+                                lineNumber: 352,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RemessasList.tsx",
-                        lineNumber: 233,
+                        lineNumber: 336,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 219,
+                lineNumber: 322,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -709,7 +856,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                             children: "Nome do Cliente"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 267,
+                                            lineNumber: 392,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -717,7 +864,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                             children: "CPF"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 270,
+                                            lineNumber: 395,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -725,7 +872,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                             children: "CNPJ Remetente"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 273,
+                                            lineNumber: 398,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -733,7 +880,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                             children: "Nº Operacional"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 276,
+                                            lineNumber: 401,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -741,7 +888,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                             children: "Status"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 279,
+                                            lineNumber: 404,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -749,7 +896,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                             children: "Última Atualização"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 282,
+                                            lineNumber: 407,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -757,18 +904,18 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                             children: "Ações"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/RemessasList.tsx",
-                                            lineNumber: 285,
+                                            lineNumber: 410,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/RemessasList.tsx",
-                                    lineNumber: 266,
+                                    lineNumber: 391,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                lineNumber: 265,
+                                lineNumber: 390,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -780,12 +927,12 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                         children: filtroAtivo ? `Nenhuma remessa encontrada com o filtro "${filtroAtivo}" aplicado.` : searchTerm ? 'Nenhuma remessa encontrada com os critérios de pesquisa.' : 'Nenhuma remessa encontrada.'
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/RemessasList.tsx",
-                                        lineNumber: 293,
+                                        lineNumber: 418,
                                         columnNumber: 19
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/RemessasList.tsx",
-                                    lineNumber: 292,
+                                    lineNumber: 417,
                                     columnNumber: 17
                                 }, this) : filteredRemessas.map((remessa, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
                                         className: "hover:bg-gray-50",
@@ -797,12 +944,12 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                                     children: remessa.nomeDestinatario
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/RemessasList.tsx",
-                                                    lineNumber: 306,
+                                                    lineNumber: 431,
                                                     columnNumber: 23
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                                lineNumber: 305,
+                                                lineNumber: 430,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -812,12 +959,12 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                                     children: formatCPF(remessa.cpfDestinatario)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/RemessasList.tsx",
-                                                    lineNumber: 311,
+                                                    lineNumber: 436,
                                                     columnNumber: 23
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                                lineNumber: 310,
+                                                lineNumber: 435,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -827,12 +974,12 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                                     children: formatCNPJ(remessa.cnpjRemetente)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/RemessasList.tsx",
-                                                    lineNumber: 316,
+                                                    lineNumber: 441,
                                                     columnNumber: 23
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                                lineNumber: 315,
+                                                lineNumber: 440,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -842,12 +989,12 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                                     children: remessa.numeroOperacional || '-'
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/RemessasList.tsx",
-                                                    lineNumber: 321,
+                                                    lineNumber: 446,
                                                     columnNumber: 23
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                                lineNumber: 320,
+                                                lineNumber: 445,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -855,7 +1002,7 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                                 children: getStatusBadge(remessa)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                                lineNumber: 325,
+                                                lineNumber: 450,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -865,12 +1012,12 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                                     children: remessa.tracking?.ultimaAtualizacao || formatDate(remessa.dataEmissao || '')
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/RemessasList.tsx",
-                                                    lineNumber: 329,
+                                                    lineNumber: 454,
                                                     columnNumber: 23
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                                lineNumber: 328,
+                                                lineNumber: 453,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -882,39 +1029,39 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                                     children: remessa.isLoadingTracking ? 'Consultando...' : 'Consultar'
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/RemessasList.tsx",
-                                                    lineNumber: 334,
+                                                    lineNumber: 459,
                                                     columnNumber: 23
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                                lineNumber: 333,
+                                                lineNumber: 458,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, remessa.id || index, true, {
                                         fileName: "[project]/src/components/RemessasList.tsx",
-                                        lineNumber: 304,
+                                        lineNumber: 429,
                                         columnNumber: 19
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                lineNumber: 290,
+                                lineNumber: 415,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RemessasList.tsx",
-                        lineNumber: 264,
+                        lineNumber: 389,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/components/RemessasList.tsx",
-                    lineNumber: 263,
+                    lineNumber: 388,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 262,
+                lineNumber: 387,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -936,36 +1083,36 @@ function RemessasList({ remessas, onClear, onUpdateRemessa, filtroAtivo }) {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/RemessasList.tsx",
-                                lineNumber: 355,
+                                lineNumber: 480,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/RemessasList.tsx",
-                        lineNumber: 352,
+                        lineNumber: 477,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         children: "💾 Dados salvos localmente - Remessas entregues são removidas após 7 dias"
                     }, void 0, false, {
                         fileName: "[project]/src/components/RemessasList.tsx",
-                        lineNumber: 362,
+                        lineNumber: 487,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/RemessasList.tsx",
-                lineNumber: 351,
+                lineNumber: 476,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/RemessasList.tsx",
-        lineNumber: 217,
+        lineNumber: 320,
         columnNumber: 5
     }, this);
 }
-_s(RemessasList, "a1cMJ8t0eYFnsCEdGcHtaGJdbCM=");
+_s(RemessasList, "yamdF2y5TT47StiCJpUhcU1AefY=");
 _c = RemessasList;
 var _c;
 __turbopack_context__.k.register(_c, "RemessasList");
