@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<cteProc versao="4.00" xmlns="http://www.portalfiscal.inf.br/cte">
+  <CTe xmlns="http://www.portalfiscal.inf.br/cte">
+    <infCte Id="CTe35250804884082000135578880011164631011164637" versao="4.00">
+      <ide>
+        <cUF>35</cUF>
+        <cCT>01116463</cCT>
+        <CFOP>6932</CFOP>
+        <natOp>Servico de Transporte</natOp>
+        <mod>57</mod>
+        <serie>888</serie>
+        <nCT>1116463</nCT>
+        <dhEmi>2025-01-15T14:59:25-03:00</dhEmi>
+        <tpImp>1</tpImp>
+        <tpEmis>1</tpEmis>
+        <cDV>7</cDV>
+        <tpAmb>1</tpAmb>
+        <tpCTe>0</tpCTe>
+        <procEmi>0</procEmi>
+        <verProc>1</verProc>
+        <cMunEnv>3550308</cMunEnv>
+        <xMunEnv>SAO PAULO</xMunEnv>
+        <UFEnv>SP</UFEnv>
+        <modal>01</modal>
+        <tpServ>0</tpServ>
+        <cMunIni>3301009</cMunIni>
+        <xMunIni>CAMPOS DOS GOYTACAZES</xMunIni>
+        <UFIni>RJ</UFIni>
+        <cMunFim>3502804</cMunFim>
+        <xMunFim>Aracatuba</xMunFim>
+        <UFFim>SP</UFFim>
+        <retira>0</retira>
+        <indIEToma>1</indIEToma>
+        <toma3>
+          <toma>0</toma>
+        </toma3>
+      </ide>
+      <compl>
+        <xCaracAd>ENTREGA EXPRESSA</xCaracAd>
+        <xCaracSer>ENTREGA EXPRESSA</xCaracSer>
+        <Entrega>
+          <comData>
+            <tpPer>2</tpPer>
+            <dProg>2025-01-17</dProg>
+          </comData>
+          <noInter>
+            <tpHor>4</tpHor>
+            <hIni>00:00:00</hIni>
+            <hFim>23:59:59</hFim>
+          </noInter>
+        </Entrega>
+        <xObs>RECOLHIMENTO ANTECIPADO NO ESTADO - BC: 45.50 ALIQUOTA: 12.00 VL ICMS: 5.46 RED BC: 0.00 - [ NUMERO OPERACIONAL: 20240115001234 / 00098765432109 ] - Valor aproximado dos tributos (13.45%) R$ 6.12 - fonte IBPT - Previsão de entrega: 17/01/2025</xObs>
+      </compl>
+      <emit>
+        <CNPJ>04884082000135</CNPJ>
+        <IE>149744148111</IE>
+        <xNome>JADLOG LOGISTICA S.A</xNome>
+        <enderEmit>
+          <xLgr>AVENIDA JORNALISTA PAULO ZINGG</xLgr>
+          <nro>810</nro>
+          <xBairro>JARDIM JARAGUA SAO DOMINGOS</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>SAO PAULO</xMun>
+          <CEP>05157030</CEP>
+          <UF>SP</UF>
+        </enderEmit>
+        <CRT>3</CRT>
+      </emit>
+      <rem>
+        <CNPJ>12345678000190</CNPJ>
+        <IE>123456789</IE>
+        <xNome>LOJA EXEMPLO LTDA</xNome>
+        <enderReme>
+          <xLgr>Rua das Flores, 123</xLgr>
+          <nro>123</nro>
+          <xBairro>Centro</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>São Paulo</xMun>
+          <CEP>01234567</CEP>
+          <UF>SP</UF>
+        </enderReme>
+      </rem>
+      <dest>
+        <CPF>12345678901</CPF>
+        <xNome>MARIA SILVA SANTOS</xNome>
+        <enderDest>
+          <xLgr>Rua das Palmeiras, 456</xLgr>
+          <nro>456</nro>
+          <xBairro>Jardim das Flores</xBairro>
+          <cMun>3301009</cMun>
+          <xMun>Campos dos Goytacazes</xMun>
+          <CEP>28000000</CEP>
+          <UF>RJ</UF>
+        </enderDest>
+      </dest>
+      <vPrest>
+        <vTPrest>45.50</vTPrest>
+        <vRec>45.50</vRec>
+        <Comp>
+          <xNome>FRETE VALOR</xNome>
+          <vComp>40.04</vComp>
+        </Comp>
+        <Comp>
+          <xNome>ADVALOREM</xNome>
+          <vComp>0.00</vComp>
+        </Comp>
+        <Comp>
+          <xNome>GRIS</xNome>
+          <vComp>5.46</vComp>
+        </Comp>
+      </vPrest>
+      <infCTeNorm>
+        <infCarga>
+          <vCarga>250.00</vCarga>
+          <proPred>Produtos Diversos</proPred>
+          <infQ>
+            <cUnid>01</cUnid>
+            <tpMed>PESO BRUTO</tpMed>
+            <qCarga>2.5000</qCarga>
+          </infQ>
+          <infQ>
+            <cUnid>03</cUnid>
+            <tpMed>VOLUME</tpMed>
+            <qCarga>1.0000</qCarga>
+          </infQ>
+        </infCarga>
+      </infCTeNorm>
+    </infCte>
+  </CTe>
+</cteProc>
