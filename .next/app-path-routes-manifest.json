@@ -1,0 +1,6 @@
+{
+  "/api/tracking/route": "/api/tracking",
+  "/api/tracking/batch/route": "/api/tracking/batch",
+  "/_not-found/page": "/_not-found",
+  "/page": "/"
+}
