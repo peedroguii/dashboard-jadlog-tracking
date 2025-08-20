@@ -1,4 +1,4 @@
-// File: C:\Users\andre\Desktop\dashboard-jadlog-tracking-main\src\app\page.tsx
+// File: C:\Users\andre\Desktop\Nova pasta\dashboard-jadlog-tracking\src\app\page.tsx
 import * as entry from '../../../src/app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

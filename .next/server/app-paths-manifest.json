@@ -1,6 +1,6 @@
 {
-  "/api/tracking/route": "app/api/tracking/route.js",
-  "/api/tracking/batch/route": "app/api/tracking/batch/route.js",
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/tracking/batch/route": "app/api/tracking/batch/route.js",
+  "/api/tracking/route": "app/api/tracking/route.js",
   "/page": "app/page.js"
 }

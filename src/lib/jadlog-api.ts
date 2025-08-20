@@ -37,7 +37,7 @@ export class JadlogAPI {
     }
   }
 
-  async consultarTrackingSimples(numeroOperacional: string): Promise<TrackingResponse | null> {
+  async consultarTrackingSimples(numeroOperacional: string[]): Promise<TrackingResponse | null> {
     try {
       const response = await fetch(`${this.baseURL}/simples/consultar`, {
         method: 'POST',
@@ -46,11 +46,9 @@ export class JadlogAPI {
           'Authorization': `Bearer ${this.token}`
         },
         body: JSON.stringify({
-          consulta: [
-            {
-              codigo: numeroOperacional
-            }
-          ]
+          consulta: numeroOperacional.map(numero => ({
+            codigo: numero
+          }))
         })
       });
 

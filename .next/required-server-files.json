@@ -102,7 +102,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "C:\\Users\\andre\\Desktop\\dashboard-jadlog-tracking-main",
+    "outputFileTracingRoot": "C:\\Users\\andre\\Desktop\\Nova pasta\\dashboard-jadlog-tracking",
     "experimental": {
       "nodeMiddleware": false,
       "cacheLife": {
@@ -285,10 +285,10 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.js",
     "turbopack": {
-      "root": "C:\\Users\\andre\\Desktop\\dashboard-jadlog-tracking-main"
+      "root": "C:\\Users\\andre\\Desktop\\Nova pasta\\dashboard-jadlog-tracking"
     }
   },
-  "appDir": "C:\\Users\\andre\\Desktop\\dashboard-jadlog-tracking-main",
+  "appDir": "C:\\Users\\andre\\Desktop\\Nova pasta\\dashboard-jadlog-tracking",
   "relativeAppDir": "",
   "files": [
     ".next\\routes-manifest.json",

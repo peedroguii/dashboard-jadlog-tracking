@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { RemessaInfo, TrackingInfo } from '@/types/jadlog';
+import { JadlogAPI } from '@/lib/jadlog-api';
 
 interface RemessasListProps {
   remessas: RemessaInfo[];
@@ -70,71 +71,29 @@ export default function RemessasList({ remessas, onClear, onUpdateRemessa, filtr
       // Extrair apenas os números operacionais
       const numeroOperacionais = remessasComNumero.map(({ remessa }) => remessa.numeroOperacional);
 
-      // Fazer chamada para a API de lote
-      const response = await fetch('/api/tracking/batch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ numeroOperacionais })
-      });
+      const jadlogAPI = new JadlogAPI(process.env.JADLOG_API_KEY || '');
 
-      if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.results && Array.isArray(data.results)) {
-        // Atualizar cada remessa com o resultado
-        data.results.forEach((result: any) => {
-          const remessaItem = remessasComNumero.find(
-            ({ remessa }) => remessa.numeroOperacional === result.numeroOperacional
-          );
-
-          if (remessaItem) {
-            const { remessa, index } = remessaItem;
-            
-            if (result.success && result.tracking) {
-              // Sucesso - atualizar com dados do tracking
-              onUpdateRemessa(index, {
-                ...remessa,
-                tracking: {
-                  status: result.tracking.status,
-                  ultimaAtualizacao: result.tracking.ultimaAtualizacao,
-                  previsaoEntrega: result.tracking.previsaoEntrega,
-                  eventos: result.tracking.eventos || []
-                },
-                isLoadingTracking: false
-              });
-            } else {
-              // Erro - marcar como erro
-              onUpdateRemessa(index, {
-                ...remessa,
-                tracking: {
-                  status: result.error || 'Erro na consulta',
-                  ultimaAtualizacao: 'N/A',
-                  eventos: []
-                },
-                isLoadingTracking: false
-              });
-            }
-          }
-        });
-
-        // Mostrar resumo
-        const { summary } = data;
-        alert(
-          `Atualização concluída!\n\n` +
-          `Total processado: ${summary.processed}\n` +
-          `Sucessos: ${summary.successful}\n` +
-          `Falhas: ${summary.failed}\n` +
-          `Lotes processados: ${summary.batches}`
-        );
-      } else {
+      const data = await jadlogAPI.consultarTrackingSimples(numeroOperacionais);
+      if (!data) {
         throw new Error('Resposta inválida da API');
       }
 
+      console.log(data);
+
+      if (data.consulta && data.consulta[0] && data.consulta[0].tracking) {
+        const trackingData = data.consulta[0].tracking;
+        const tracking: TrackingInfo = {
+          status: trackingData.status || 'Não disponível',
+          ultimaAtualizacao: trackingData.dtEmissao || new Date().toLocaleDateString('pt-BR'),
+          previsaoEntrega: data.consulta[0].previsaoEntrega,
+          eventos: trackingData.eventos || []
+        };
+
+        console.log(tracking);
+        return;
+      } else {
+        throw new Error('Resposta inválida da API');
+      }
     } catch (error) {
       console.error('Erro ao atualizar todos:', error);
       alert('Erro ao atualizar remessas. Tente novamente mais tarde.');

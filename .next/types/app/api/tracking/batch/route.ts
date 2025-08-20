@@ -1,4 +1,4 @@
-// File: C:\Users\andre\Desktop\dashboard-jadlog-tracking-main\src\app\api\tracking\batch\route.ts
+// File: C:\Users\andre\Desktop\Nova pasta\dashboard-jadlog-tracking\src\app\api\tracking\batch\route.ts
 import * as entry from '../../../../../../src/app/api/tracking/batch/route.js'
 import type { NextRequest } from 'next/server.js'
 
